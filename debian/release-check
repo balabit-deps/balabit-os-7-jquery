@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+./debian/rules override_dh_auto_build
+rc=0
+./debian/tests/check-against-upstream-build dist/jquery.js || rc=$?
+./debian/tests/check-minification dist/jquery.min.js || rc=$?
+./debian/rules clean
+exit $rc

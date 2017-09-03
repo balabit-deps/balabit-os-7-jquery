@@ -1,0 +1,40 @@
+#!/usr/bin/make -f
+
+source = $(shell find src/ -name '*.js')
+timestamp = $(shell date --iso-8601=minutes --utc --date="$(shell dpkg-parsechangelog -S Date)" | sed -e 's/+00:\?00/Z/')
+version = $(shell dpkg-parsechangelog -SVersion | cut -d - -f 1 | sed 's/~/-/')
+
+override_dh_auto_build: dist/jquery.js dist/jquery.min.js dist/jquery.min.map
+	dh_auto_build
+
+build.js: debian/build.js
+	cp $< $@
+
+dist/jquery.js: start.js end.js build.js $(source)
+	nodejs /usr/lib/nodejs/requirejs/r.js -o build.js
+	sed -i -e 's/@DATE/$(timestamp)/; s/@VERSION/$(version)/' $@
+	@echo "Checking syntax of $@ ..."
+	nodejs --check $@ || (mv $@ $@.failed; false)
+
+start.js: src/wrapper.js
+	sed -e '/^\/\*\s*eslint-/d; /^\/\/ @CODE/,$$ d' $< > $@ || ($(RM) $@; false)
+
+end.js: src/wrapper.js
+	sed -e '1,/^\/\/ @CODE/ d; /\/\/ build.js inserts compiled jQuery here/d' $< > $@ || ($(RM) $@; false)
+
+dist/jquery.min.js dist/jquery.min.map: dist/jquery.js
+	./debian/minify $^
+
+override_dh_auto_test:
+	nodejs --check dist/jquery.js
+	nodejs --check dist/jquery.min.js
+	./debian/tests/check-minification dist/jquery.min.js
+
+override_dh_auto_clean:
+	$(RM) -rf dist/
+	$(RM) build.js
+	$(RM) start.js end.js
+	dh_auto_clean
+
+%:
+	dh $@

@@ -1,0 +1,30 @@
+#!/bin/sh
+
+exec 2>&1
+
+set -ex
+
+version=$(dpkg-parsechangelog -SVersion | cut -d - -f 1 | sed 's/~/-/')
+
+build="$1"
+if [ -z "$build" ]; then
+  build='/usr/share/javascript/jquery/jquery.js'
+fi
+
+upstream_cache="$ADTTMP"
+if [ -z "$upstream_cache" ]; then
+  upstream_cache=$HOME/.cache/jquery-debian
+  mkdir -p "$upstream_cache"
+fi
+upstream_build=$upstream_cache/jquery-${version}.js
+
+if [ ! -f "$upstream_build" ]; then
+  wget --output-document="$upstream_build" \
+    https://code.jquery.com/jquery-${version}.js
+fi
+
+diff --ignore-blank-lines \
+  --ignore-matching-lines=Date:.*Z \
+  --ignore-matching-lines='^\s*"use strict";\s*$' \
+  -u "$upstream_build" "$build"
+

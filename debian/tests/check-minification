@@ -1,0 +1,18 @@
+#!/bin/sh
+
+set -e
+
+rc=0
+
+if [ $# -eq 0 ]; then
+  eval set -- /usr/share/javascript/jquery/jquery.min.js
+fi
+
+for minjs in "$@"; do
+  if grep -q '^..# sourceMappingURL=' $minjs; then
+    echo "E: $minjs contains '//# sourceMappingURL=.*'"
+    rc=1
+  fi
+done
+
+exit $rc

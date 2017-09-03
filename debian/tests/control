@@ -1,0 +1,2 @@
+Tests: check-against-upstream-build, check-minification
+Depends: @, wget, ca-certificates

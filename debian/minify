@@ -1,0 +1,14 @@
+#!/bin/sh
+
+output="$1"
+
+set -x
+
+uglifyjs \
+	--source-map ${output%%.js}.min.map \
+	--source-map-url jquery.min.map \
+	--output ${output%%.js}.min.js \
+	"$output"
+
+# remove sourceMappingURL comment, as upstream does
+sed -i -e '/\/\/# sourceMappingURL=\S\+/ d' ${output%%.js}.min.js
